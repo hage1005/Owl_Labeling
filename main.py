@@ -106,6 +106,8 @@ class LabelTool():
         self.idxEntry.pack(side=LEFT)
         self.goBtn = Button(self.ctrPanel, text='Go', command=self.gotoImage)
         self.goBtn.pack(side=LEFT)
+        self.tmpLabel2 = Label(self.ctrPanel, text="Number of Owls: ")
+        self.tmpLabel2.pack(side=LEFT, padx=5)
         self.decreaseBtn = Button(self.ctrPanel, text="-", command=self.decrease)
         self.decreaseBtn.pack(side=LEFT)
         self.owlValue = Label(self.ctrPanel, text="0")
@@ -221,6 +223,7 @@ class LabelTool():
         self.csvData.append([self.imageList[self.cur], self.owlValue["text"]])
         self.list_box_new.insert(END, "{} has {} owls".format(self.imageList[self.cur][-10:], self.owlValue["text"]))
         self.owlValue["text"] = 0
+        self.list_box_new.yview(END)
         print("cur is ", self.cur)
 
     def save(self):
@@ -229,7 +232,7 @@ class LabelTool():
             for row in self.csvData:
                 owl_writer.writerow(row)
             self.csvData.clear()
-            self.list_box_new.delete(0, len(self.bboxList))
+            self.list_box_new.delete(0, self.list_box_new.size())
 
     def mouseClick(self, event):
         if self.STATE['click'] == 0:
