@@ -78,7 +78,7 @@ class LabelTool():
         self.parent.bind("<Right>", self.nextImage)  # press 'd' to go forward
         self.parent.bind("<Down>", self.decrease)
         self.parent.bind("<Up>", self.increase)
-        self.mainPanel.grid(row=1, column=1, rowspan=4, sticky=W + N)
+        self.mainPanel.grid(row=1, column=1, rowspan=5, sticky=W + N)
 
         # showing bbox info & delete bbox
         self.lb1 = Label(self.frame, text='Bounding boxes:')
@@ -87,10 +87,10 @@ class LabelTool():
         self.list_box_new.grid(row=2, column=2, sticky=N)
         self.btnDel = Button(self.frame, text='Delete', command=self.delBBox)
         self.btnDel.grid(row=3, column=2, sticky=W + E + N)
-        self.btnClear = Button(self.frame, text='ClearAll', command=self.clearBBox)
-        self.btnClear.grid(row=4, column=2, sticky=W + E + N)
-        self.btnClear = Button(self.frame, text='Save', command=self.save)
-        self.btnClear.grid(row=4, column=2, sticky=W + E + N)
+        # self.btnClear = Button(self.frame, text='ClearAll', command=self.clear_owl_list)
+        # self.btnClear.grid(row=4, column=2, sticky=W + E + N)
+        self.btnSave = Button(self.frame, text='Save', command=self.save)
+        self.btnSave.grid(row=4, column=2, sticky=W + E + N)
         # control panel for image navigation
         self.ctrPanel = Frame(self.frame)
         self.ctrPanel.grid(row=5, column=1, columnspan=2, sticky=W + E)
@@ -156,7 +156,11 @@ class LabelTool():
         # default to the 1st image in the collection
         self.cur = 1
         self.total = len(self.imageList)
+        print('%d images pre-loaded before call' % (len(self.imageList)))
+        self.loadImage()
+        print('%d images loaded from %s' % (self.total, s))
 
+    """
         # set up output dir
         self.outDir = os.path.join(r'./Labels', '%03d' % (self.category))
         if not os.path.exists(self.outDir):
@@ -169,7 +173,6 @@ class LabelTool():
         filelist = glob.glob(os.path.join(self.egDir, '*.JPEG'))
         self.tmp = []
         self.egList = []
-        random.shuffle(filelist)
         for (i, f) in enumerate(filelist):
             if i == 3:
                 break
@@ -179,21 +182,19 @@ class LabelTool():
             self.tmp.append(im.resize(new_size, Image.ANTIALIAS))
             self.egList.append(ImageTk.PhotoImage(self.tmp[-1]))
             self.egLabels[i].config(image=self.egList[-1], width=SIZE[0], height=SIZE[1])
-
-        self.loadImage()
-        print('%d images loaded from %s' % (self.total, s))
+    """
 
     def loadImage(self):
         # load image
         imagepath = self.imageList[self.cur - 1]
         self.img = Image.open(imagepath)
+        self.img = self.img.resize((self.frame.winfo_width(), self.frame.winfo_height()), Image.ANTIALIAS)
         self.tkimg = ImageTk.PhotoImage(self.img)
         self.mainPanel.config(width=max(self.tkimg.width(), 400), height=max(self.tkimg.height(), 400))
+        #self.mainPanel.config(width=self.tkimg.width(), height=self.tkimg.height())
         self.mainPanel.create_image(0, 0, image=self.tkimg, anchor=NW)
         self.progLabel.config(text="%04d/%04d" % (self.cur, self.total))
-
         # load labels
-        self.clearBBox()
         self.imagename = os.path.split(imagepath)[-1].split('.')[0]
         labelname = self.imagename + '.txt'
         self.labelfilename = os.path.join(self.outDir, labelname)
@@ -218,13 +219,17 @@ class LabelTool():
 
     def saveImage(self):
         self.csvData.append([self.imageList[self.cur], self.owlValue["text"]])
-        self.list_box_new.insert(0,"{} has {} owls".format(self.imageList[self.cur][-10], self.owlValue["text"]) )
+        self.list_box_new.insert(END, "{} has {} owls".format(self.imageList[self.cur][-10:], self.owlValue["text"]))
+        self.owlValue["text"] = 0
+        print("cur is ", self.cur)
+
     def save(self):
         with open('owl_file.csv', mode='a') as owl_file:
             owl_writer = csv.writer(owl_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             for row in self.csvData:
                 owl_writer.writerow(row)
             self.csvData.clear()
+            self.list_box_new.delete(0, len(self.bboxList))
 
     def mouseClick(self, event):
         if self.STATE['click'] == 0:
@@ -235,9 +240,8 @@ class LabelTool():
             self.bboxList.append((x1, y1, x2, y2))
             self.bboxIdList.append(self.bboxId)
             self.bboxId = None
-            self.listbox.insert(END, '(%d, %d) -> (%d, %d)' % (x1, y1, x2, y2))
-            self.listbox.itemconfig(len(self.bboxIdList) - 1, fg=COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
-            self.listbox.yview(END)
+            # self.listbox.insert(END, '(%d, %d) -> (%d, %d)' % (x1, y1, x2, y2))
+            # self.listbox.itemconfig(len(self.bboxIdList) - 1, fg=COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
 
         self.STATE['click'] = 1 - self.STATE['click']
 
@@ -266,21 +270,17 @@ class LabelTool():
                 self.STATE['click'] = 0
 
     def delBBox(self):
-        sel = self.listbox.curselection()
+        sel = self.list_box_new.curselection()
         if len(sel) != 1:
             return
         idx = int(sel[0])
-        self.mainPanel.delete(self.bboxIdList[idx])
-        self.bboxIdList.pop(idx)
-        self.bboxList.pop(idx)
-        self.listbox.delete(idx)
+        self.list_box_new.delete(idx)
+        self.csvData.pop(idx)
+        print(self.csvData)
 
-    def clearBBox(self):
-        for idx in range(len(self.bboxIdList)):
-            self.mainPanel.delete(self.bboxIdList[idx])
-        self.listbox.delete(0, len(self.bboxList))
-        self.bboxIdList = []
-        self.bboxList = []
+    def clear_owl_list(self):
+        self.list_box_new = []
+        self.csvData = []
 
     def prevImage(self, event=None):
         self.saveImage()
