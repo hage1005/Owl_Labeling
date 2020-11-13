@@ -3,8 +3,7 @@ Owl-Label-Tool
 
 Environment
 ----------
-- python 2.7
-- python PIL (Pillow)
+- python 3
 
 Run
 -------
