@@ -220,8 +220,9 @@ class LabelTool():
                                             fg=COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
 
     def saveImage(self):
-        self.csvData.append([self.imageList[self.cur], self.owlValue["text"]])
-        self.list_box_new.insert(END, "{} has {} owls".format(self.imageList[self.cur][-10:], self.owlValue["text"]))
+        print(self.imageList)
+        self.csvData.append([self.imageList[self.cur-1], self.owlValue["text"]])
+        self.list_box_new.insert(END, "{} has {} owls".format(self.imageList[self.cur - 1][-10:], self.owlValue["text"]))
         self.owlValue["text"] = 0
         self.list_box_new.yview(END)
         print("cur is ", self.cur)
